@@ -2,8 +2,17 @@
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg fonts-montserrat curl \
+    && apt-get install -y --no-install-recommends ffmpeg fontconfig curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Fonte das legendas (Montserrat, licença OFL). Não existe pacote dela no Debian.
+RUN mkdir -p /usr/share/fonts/truetype/montserrat \
+    && for peso in ExtraBold Bold; do \
+         curl -fsSL -o /usr/share/fonts/truetype/montserrat/Montserrat-$peso.ttf \
+           "https://github.com/JulietaUla/Montserrat/raw/master/fonts/ttf/Montserrat-$peso.ttf"; \
+       done \
+    && fc-cache -f \
+    && fc-list | grep -q "Montserrat"
 
 RUN useradd --create-home --uid 1000 kj
 WORKDIR /opt/kjcortes

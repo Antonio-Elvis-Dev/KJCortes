@@ -37,6 +37,7 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -u x:teste http://localhost:8000/)" = "200"
           docker exec kj ffmpeg -version | head -1
           docker exec kj kjcortes --version
+          docker exec kj fc-list | grep -i "Montserrat ExtraBold"
       - name: Logs do painel
         if: always()
         run: docker logs kj || true
