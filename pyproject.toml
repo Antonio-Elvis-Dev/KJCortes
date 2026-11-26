@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kjcortes"
+version = "0.1.0"
+description = "Cortes automáticos, verticais e legendados de lives e vídeos de streamers"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "yt-dlp>=2024.10.0",
+    "faster-whisper>=1.0.0",
+    "numpy>=1.24",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+chat = ["chat-downloader>=0.2.8"]
+ia = ["anthropic>=0.40.0"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+kjcortes = "kjcortes.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

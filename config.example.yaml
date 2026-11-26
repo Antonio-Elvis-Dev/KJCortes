@@ -1,0 +1,41 @@
+# Copie para config.yaml e ajuste. Todos os campos são opcionais.
+
+pastas:
+  cache: cache          # vídeos baixados, áudio, transcrições e chat
+  saida: saida          # cortes finais (.mp4 + .json)
+
+transcricao:
+  modelo: large-v3      # tiny, base, small, medium, large-v3, large-v3-turbo
+  dispositivo: auto     # auto, cuda ou cpu
+  idioma: pt            # deixe vazio para detectar automaticamente
+
+cortes:
+  quantidade: 5         # quantos cortes gerar por vídeo
+  duracao_min: 20       # segundos
+  duracao_max: 60       # segundos
+  intervalo_min: 30     # distância mínima entre dois cortes, em segundos
+
+pontuacao:              # peso de cada sinal na escolha dos trechos
+  audio: 1.0            # picos de volume (gritos, risadas)
+  chat: 1.5             # picos de mensagens no chat
+  fala: 0.5             # densidade de fala
+  ia: 2.0               # nota dada pela IA à transcrição (precisa de ANTHROPIC_API_KEY)
+
+ia:
+  ativa: false
+  modelo: claude-sonnet-5-5
+  max_candidatos: 20    # quantos trechos pré-selecionados a IA avalia
+
+video:
+  layout: desfoque      # desfoque (vídeo inteiro + fundo desfocado) ou centro (recorte central)
+  largura: 1080
+  altura: 1920
+  encoder: auto         # auto (usa NVENC se houver GPU NVIDIA), h264_nvenc ou libx264
+
+legenda:
+  fonte: Montserrat ExtraBold
+  tamanho: 84
+  palavras_por_linha: 3
+  cor: "&H00FFFFFF"       # branco (formato ASS: &HAABBGGRR)
+  cor_destaque: "&H0000E5FF"  # amarelo na palavra falada
+  posicao_vertical: 0.70  # 0 = topo, 1 = base
