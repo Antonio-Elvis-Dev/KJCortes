@@ -27,6 +27,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("-v", "--verbose", action="store_true", help="Mostra mais detalhes")
 
     args = parser.parse_args(argv)
+    # No Windows o console usa cp1252 e quebra com emojis dos títulos dos vídeos.
+    for fluxo in (sys.stdout, sys.stderr):
+        if hasattr(fluxo, "reconfigure"):
+            fluxo.reconfigure(encoding="utf-8", errors="replace")
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 
     cfg = config.carregar(args.config)

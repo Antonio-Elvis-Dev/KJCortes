@@ -76,7 +76,7 @@ def renderizar(video: Path, inicio: float, fim: float, saida: Path, cfg_video: d
         legenda.name if legenda else None,
     )
     log.info("Renderizando %s (%s)", saida.name, encoder)
-    resultado = subprocess.run(cmd, cwd=saida.parent, capture_output=True, text=True)
+    resultado = subprocess.run(cmd, cwd=saida.parent, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if resultado.returncode != 0:
         raise RuntimeError(f"FFmpeg falhou ao gerar {saida.name}:\n{resultado.stderr[-2000:]}")
     return saida
