@@ -123,6 +123,6 @@ pytest
 
 O teste de ponta a ponta gera um vídeo sintético e roda o fluxo inteiro (sem baixar nada nem carregar o Whisper).
 
-## Próximas etapas
+## Rodar numa VPS
 
-4. Docker e fila de tarefas para rodar em uma VPS.
+Há imagem Docker para CPU (`Dockerfile`) e para GPU NVIDIA (`Dockerfile.gpu`), um `docker-compose.yml` com HTTPS automático pelo Caddy e senha no painel. Numa VPS sem GPU, a transcrição pode ser feita por API (Groq ou OpenAI) com `transcricao: provedor: api`. O passo a passo completo está em [VPS.md](VPS.md).

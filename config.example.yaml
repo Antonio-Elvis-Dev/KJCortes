@@ -6,9 +6,13 @@ pastas:
   saida: saida          # cortes finais (.mp4 + .json)
 
 transcricao:
+  provedor: local       # local (faster-whisper, usa a GPU) ou api (para VPS sem GPU)
   modelo: large-v3      # tiny, base, small, medium, large-v3, large-v3-turbo
   dispositivo: auto     # auto, cuda ou cpu
   idioma: pt            # deixe vazio para detectar automaticamente
+  # Com provedor: api. A chave vai na variável de ambiente TRANSCRICAO_API_KEY.
+  api_url: https://api.groq.com/openai/v1   # ou https://api.openai.com/v1
+  api_modelo: whisper-large-v3-turbo        # na OpenAI: whisper-1
 
 cortes:
   quantidade: 5         # quantos cortes gerar por vídeo

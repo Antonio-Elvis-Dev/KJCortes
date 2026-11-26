@@ -63,7 +63,7 @@ def criar_app(cfg: dict, iniciar_fila: bool = True, http=None) -> FastAPI:
     @app.middleware("http")
     async def proteger(request: Request, call_next):
         # Opcional: com KJCORTES_SENHA definida, o painel pede usuário/senha (para quando estiver na VPS).
-        if senha:
+        if senha and request.url.path != "/saude":
             cab = request.headers.get("authorization", "")
             ok = False
             if cab.startswith("Basic "):
@@ -78,6 +78,10 @@ def criar_app(cfg: dict, iniciar_fila: bool = True, http=None) -> FastAPI:
 
     def voltar(url: str) -> RedirectResponse:
         return RedirectResponse(url, status_code=303)
+
+    @app.get("/saude")
+    def saude():
+        return {"ok": True}
 
     # Início -----------------------------------------------------------------
 
@@ -351,4 +355,7 @@ def _404():
 def rodar(cfg: dict, host: str = "127.0.0.1", porta: int = 8000) -> None:
     import uvicorn
 
-    uvicorn.run(criar_app(cfg), host=host, port=porta, log_level="info")
+    # Atrás do Caddy (Docker), confia nos cabeçalhos X-Forwarded-* para montar os links de retorno em HTTPS.
+    atras_de_proxy = os.environ.get("KJCORTES_ATRAS_DE_PROXY") == "1"
+    uvicorn.run(criar_app(cfg), host=host, port=porta, log_level="info",
+                proxy_headers=atras_de_proxy, forwarded_allow_ips="*" if atras_de_proxy else None)

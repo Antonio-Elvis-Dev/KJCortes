@@ -43,6 +43,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.comando == "painel":
         from .web.app import rodar
 
+        import os
+
+        if args.host not in ("127.0.0.1", "localhost") and not os.environ.get("KJCORTES_SENHA"):
+            logging.warning("Painel aberto para a rede SEM senha. Defina KJCORTES_SENHA antes de expor na internet.")
         print(f"Painel em http://{'localhost' if args.host == '127.0.0.1' else args.host}:{args.porta}")
         rodar(cfg, args.host, args.porta)
         return 0
