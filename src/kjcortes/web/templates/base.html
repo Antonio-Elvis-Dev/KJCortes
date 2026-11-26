@@ -13,11 +13,14 @@
     <nav>
       <a href="/" class="{{ 'ativo' if aba == 'inicio' }}">Início</a>
       <a href="/cortes" class="{{ 'ativo' if aba == 'cortes' }}">Revisar cortes</a>
+      <a href="/postagens" class="{{ 'ativo' if aba == 'postagens' }}">Postagens</a>
       <a href="/streamers" class="{{ 'ativo' if aba == 'streamers' }}">Streamers</a>
+      <a href="/contas" class="{{ 'ativo' if aba == 'contas' }}">Contas</a>
     </nav>
   </header>
   <main>
     {% if erro %}<div class="aviso">{{ erro }}</div>{% endif %}
+    {% if ok %}<div class="aviso sucesso">{{ ok }}</div>{% endif %}
     {% block conteudo %}{% endblock %}
   </main>
 </body>

@@ -1,0 +1,71 @@
+<div class="cartao" style="margin-top: 18px">
+  <h2 style="margin-top: 0">Postar</h2>
+  {% if postagens %}
+  <table style="margin-bottom: 14px">
+    <tr><th>Rede</th><th>Situação</th><th>Quando</th><th></th></tr>
+    {% for p in postagens %}
+    <tr>
+      <td>{{ PUBS[p.rede].nome }}</td>
+      <td><span class="selo {{ p.status }}">{{ p.status }}</span>
+        {% if p.erro %}<div class="erro-video">{{ p.erro }}</div>{% endif %}</td>
+      <td class="dica">{{ (p.publicada_em or p.agendada_para)|replace("T", " ") }}</td>
+      <td>
+        {% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">abrir</a>{% endif %}
+        {% if p.status == "agendada" %}<form class="inline" method="post" action="/postagens/{{ p.id }}/cancelar"><input type="hidden" name="voltar_para" value="/cortes/{{ c.id }}"><button class="secundario">Cancelar</button></form>{% endif %}
+        {% if p.status in ("erro", "cancelada") %}<form class="inline" method="post" action="/postagens/{{ p.id }}/repetir"><input type="hidden" name="voltar_para" value="/cortes/{{ c.id }}"><button class="secundario">Tentar de novo</button></form>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if not autorizado %}
+  <p class="aviso">{{ c.streamer_nome }} não tem autorização vigente. A postagem está bloqueada.</p>
+  {% elif not (conectadas.youtube or conectadas.tiktok or conectadas.instagram) %}
+  <p>Nenhuma rede conectada. <a href="/contas">Conecte suas contas</a> para postar.</p>
+  {% else %}
+  <form method="post" action="/cortes/{{ c.id }}/postar">
+    <div class="rede {{ '' if conectadas.youtube else 'desligada' }}">
+      <label><input type="checkbox" name="rede_youtube" {{ 'disabled' if 'youtube' in ativas or not conectadas.youtube }}> YouTube Shorts
+        {% if 'youtube' in ativas %}<span class="dica">(já agendado ou publicado)</span>{% elif conectadas.youtube %}<span class="dica">({{ conectadas.youtube.nome }})</span>{% else %}<span class="dica">(não conectado)</span>{% endif %}</label>
+      {% if conectadas.youtube %}
+      <div class="opcoes campo"><label for="youtube_privacidade">Visibilidade</label>
+        <select id="youtube_privacidade" name="youtube_privacidade">{% for k, v in PRIV_YOUTUBE.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      {% endif %}
+    </div>
+
+    <div class="rede {{ '' if conectadas.tiktok else 'desligada' }}">
+      <label><input type="checkbox" name="rede_tiktok" {{ 'disabled' if 'tiktok' in ativas or not conectadas.tiktok or tiktok.erro }}> TikTok
+        {% if 'tiktok' in ativas %}<span class="dica">(já agendado ou publicado)</span>{% elif conectadas.tiktok %}<span class="dica">({{ tiktok.creator_username and '@' ~ tiktok.creator_username or conectadas.tiktok.nome }})</span>{% else %}<span class="dica">(não conectado)</span>{% endif %}</label>
+      {% if tiktok.erro %}<div class="opcoes erro-video">{{ tiktok.erro }}</div>
+      {% elif conectadas.tiktok %}
+      <div class="opcoes">
+        <div class="campo"><label for="tiktok_privacidade">Quem pode ver</label>
+          <select id="tiktok_privacidade" name="tiktok_privacidade">
+            <option value="">Escolha…</option>
+            {% for k in tiktok.privacy_level_options or ["SELF_ONLY"] %}<option value="{{ k }}">{{ PRIV_TIKTOK.get(k, k) }}</option>{% endfor %}
+          </select></div>
+        <label><input type="checkbox" name="tiktok_sem_comentarios" {{ 'checked disabled' if tiktok.comment_disabled }}> Desativar comentários</label>
+        <label><input type="checkbox" name="tiktok_sem_dueto" {{ 'checked disabled' if tiktok.duet_disabled }}> Desativar dueto</label>
+        <label><input type="checkbox" name="tiktok_sem_stitch" {{ 'checked disabled' if tiktok.stitch_disabled }}> Desativar stitch</label>
+        {% if tiktok.max_video_post_duration_sec and (c.fim - c.inicio) > tiktok.max_video_post_duration_sec %}
+        <p class="erro-video">O corte tem {{ (c.fim - c.inicio)|round|int }}s e esta conta aceita no máximo {{ tiktok.max_video_post_duration_sec }}s.</p>{% endif %}
+        <label style="margin-top: 8px"><input type="checkbox" name="tiktok_consentimento"> Ao postar, concordo com a <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Confirmação de Uso de Música</a> do TikTok.</label>
+        <p class="dica">Depois de postado, pode levar alguns minutos para o vídeo aparecer no perfil.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="rede {{ '' if conectadas.instagram else 'desligada' }}">
+      <label><input type="checkbox" name="rede_instagram" {{ 'disabled' if 'instagram' in ativas or not conectadas.instagram }}> Instagram Reels
+        {% if 'instagram' in ativas %}<span class="dica">(já agendado ou publicado)</span>{% elif conectadas.instagram %}<span class="dica">({{ conectadas.instagram.nome }})</span>{% else %}<span class="dica">(não conectado)</span>{% endif %}</label>
+    </div>
+
+    <div class="linha" style="margin-top: 12px">
+      <div class="campo"><label for="agendar_para">Agendar para (vazio = postar agora)</label><input id="agendar_para" type="datetime-local" name="agendar_para"></div>
+      <div style="flex: 0 0 auto" class="campo"><button type="submit">Postar</button></div>
+    </div>
+    <p class="dica">Cada rede usa o texto da caixa correspondente acima. Salve as edições antes de postar.</p>
+  </form>
+  {% endif %}
+</div>

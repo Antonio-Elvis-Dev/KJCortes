@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% set aba = "postagens" %}
+{% block cabecalho %}{% if postagens|selectattr("status", "in", ["agendada", "enviando", "processando"])|list %}<meta http-equiv="refresh" content="20">{% endif %}{% endblock %}
+{% block conteudo %}
+<h1>Postagens</h1>
+{% if postagens %}
+<div class="cartao" style="padding: 6px 12px">
+<table>
+  <tr><th>Corte</th><th>Rede</th><th>Situação</th><th>Quando</th><th></th></tr>
+  {% for p in postagens %}
+  <tr>
+    <td><a href="/cortes/{{ p.corte_id }}">{{ p.corte_titulo or "Corte" }}</a><div class="dica">{{ p.streamer_nome }}</div></td>
+    <td>{{ PUBS[p.rede].nome }}</td>
+    <td><span class="selo {{ p.status }}">{{ p.status }}</span>{% if p.erro %}<div class="erro-video">{{ p.erro }}</div>{% endif %}</td>
+    <td class="dica">{{ (p.publicada_em or p.agendada_para)|replace("T", " ") }}</td>
+    <td>
+      {% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">abrir</a>{% endif %}
+      {% if p.status == "agendada" %}<form class="inline" method="post" action="/postagens/{{ p.id }}/cancelar"><button class="secundario">Cancelar</button></form>{% endif %}
+      {% if p.status in ("erro", "cancelada") %}<form class="inline" method="post" action="/postagens/{{ p.id }}/repetir"><button class="secundario">Tentar de novo</button></form>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<p class="dica">Nada postado ainda. Aprove um corte e use a seção "Postar" na página dele.</p>
+{% endif %}
+{% endblock %}

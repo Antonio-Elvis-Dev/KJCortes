@@ -70,9 +70,34 @@ CREATE TABLE IF NOT EXISTS cortes (
     revisado_em TEXT DEFAULT '',
     criado_em TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS contas (
+    rede TEXT PRIMARY KEY,           -- youtube, tiktok, instagram
+    nome TEXT DEFAULT '',            -- nome/@ da conta conectada, para mostrar no painel
+    credenciais TEXT NOT NULL,       -- JSON com tokens
+    atualizado_em TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS postagens (
+    id INTEGER PRIMARY KEY,
+    corte_id INTEGER NOT NULL REFERENCES cortes(id) ON DELETE CASCADE,
+    rede TEXT NOT NULL,
+    opcoes TEXT DEFAULT '{}',        -- JSON: privacidade etc.
+    status TEXT NOT NULL DEFAULT 'agendada',
+    agendada_para TEXT NOT NULL,     -- ISO local; agora = postar assim que possível
+    tentativas INTEGER NOT NULL DEFAULT 0,
+    id_externo TEXT DEFAULT '',
+    url TEXT DEFAULT '',
+    erro TEXT DEFAULT '',
+    criado_em TEXT NOT NULL,
+    atualizado_em TEXT NOT NULL,
+    publicada_em TEXT DEFAULT ''
+);
 """
 
 STATUS_CORTE = ("pendente", "aprovado", "rejeitado")
+STATUS_POSTAGEM = ("agendada", "enviando", "processando", "publicada", "erro", "cancelada")
+REDES = ("youtube", "tiktok", "instagram")
 
 
 def agora() -> str:
@@ -251,6 +276,72 @@ class Banco:
         base = {s: 0 for s in STATUS_CORTE}
         base.update({l["status"]: l["n"] for l in linhas})
         return base
+
+    # Contas das redes ----------------------------------------------------------
+
+    def salvar_conta(self, rede: str, credenciais: dict, nome: str = "") -> None:
+        with self.conexao() as c:
+            c.execute(
+                "INSERT INTO contas (rede, nome, credenciais, atualizado_em) VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(rede) DO UPDATE SET nome = excluded.nome, credenciais = excluded.credenciais, "
+                "atualizado_em = excluded.atualizado_em",
+                (rede, nome, json.dumps(credenciais), agora()),
+            )
+
+    def conta(self, rede: str) -> dict | None:
+        r = self._um("SELECT * FROM contas WHERE rede = ?", rede)
+        if r:
+            r["credenciais"] = json.loads(r["credenciais"])
+        return r
+
+    def remover_conta(self, rede: str) -> None:
+        with self.conexao() as c:
+            c.execute("DELETE FROM contas WHERE rede = ?", (rede,))
+
+    # Postagens -----------------------------------------------------------------
+
+    def criar_postagem(self, corte_id: int, rede: str, agendada_para: str = "", opcoes: dict | None = None) -> int:
+        if rede not in REDES:
+            raise ValueError(f"Rede desconhecida: {rede}")
+        t = agora()
+        return self._inserir("postagens", {
+            "corte_id": corte_id, "rede": rede, "opcoes": json.dumps(opcoes or {}, ensure_ascii=False),
+            "agendada_para": agendada_para or t, "criado_em": t, "atualizado_em": t,
+        })
+
+    def atualizar_postagem(self, ident: int, **dados: Any) -> None:
+        dados["atualizado_em"] = agora()
+        self._atualizar("postagens", ident, dados)
+
+    def postagem(self, ident: int) -> dict | None:
+        p = self._um("SELECT * FROM postagens WHERE id = ?", ident)
+        if p:
+            p["opcoes"] = json.loads(p["opcoes"] or "{}")
+        return p
+
+    def postagens(self, corte_id: int | None = None, limite: int = 100) -> list[dict]:
+        sql = ("SELECT p.*, c.titulo AS corte_titulo, s.nome AS streamer_nome FROM postagens p "
+               "JOIN cortes c ON c.id = p.corte_id JOIN streamers s ON s.id = c.streamer_id")
+        args: list[Any] = []
+        if corte_id:
+            sql += " WHERE p.corte_id = ?"
+            args.append(corte_id)
+        return self._todos(sql + " ORDER BY p.agendada_para DESC, p.id DESC LIMIT ?", *args, limite)
+
+    def postagens_vencidas(self, momento: str | None = None) -> list[dict]:
+        """Postagens agendadas cujo horário já chegou, mais as que estão processando na rede."""
+        lista = self._todos(
+            "SELECT * FROM postagens WHERE (status = 'agendada' AND agendada_para <= ?) OR status = 'processando' "
+            "ORDER BY agendada_para, id", momento or agora())
+        for p in lista:
+            p["opcoes"] = json.loads(p["opcoes"] or "{}")
+        return lista
+
+    def postagem_ativa(self, corte_id: int, rede: str) -> dict | None:
+        """Postagem do corte nesta rede que ainda não falhou nem foi cancelada (evita postar duas vezes)."""
+        return self._um(
+            "SELECT * FROM postagens WHERE corte_id = ? AND rede = ? AND status NOT IN ('erro', 'cancelada') "
+            "ORDER BY id DESC LIMIT 1", corte_id, rede)
 
 
 def normalizar_arroba(valor: str) -> str:

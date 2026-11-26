@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% set aba = "contas" %}
+{% block conteudo %}
+<h1>Contas das redes</h1>
+<p class="dica">Os cortes são postados pelas APIs oficiais de cada rede, na conta que você conectar aqui.</p>
+
+{% for rede, pub, conta in redes %}
+<div class="cartao">
+  <h2 style="margin-top: 0; display: flex; gap: 10px; align-items: center">{{ pub.nome }}
+    {% if conta %}<span class="selo sim">conectado</span>{% else %}<span class="selo nao">não conectado</span>{% endif %}</h2>
+  {% if conta %}
+  <p>Conta: <b>{{ conta.nome or "sem nome" }}</b> <span class="dica">· atualizado em {{ conta.atualizado_em|replace("T", " ") }}</span></p>
+  <form method="post" action="/contas/{{ rede }}/remover" onsubmit="return confirm('Desconectar {{ pub.nome }}?')"><button class="secundario">Desconectar</button></form>
+  {% endif %}
+
+  {% if rede == "youtube" %}
+    {% if not conta %}{% if pub.configurado() %}<a class="botao" href="/contas/youtube/conectar">Conectar YouTube</a>{% endif %}{% endif %}
+    <details {{ 'open' if not pub.configurado() }} style="margin-top: 12px"><summary>Como configurar</summary>
+    <ol class="passos">
+      <li>No <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>, crie um projeto e ative a <b>YouTube Data API v3</b>.</li>
+      <li>Em <i>Tela de consentimento OAuth</i>, escolha "Externo" e adicione o seu e-mail como usuário de teste.</li>
+      <li>Em <i>Credenciais</i>, crie um <b>ID do cliente OAuth</b> do tipo <b>App para computador</b> e baixe o JSON.</li>
+      <li>Salve o arquivo como <code>dados/youtube_client_secret.json</code> e recarregue esta página.</li>
+    </ol>
+    <p class="dica">Enquanto o projeto não passar pela auditoria do Google, os vídeos enviados pela API ficam privados. A cota padrão permite cerca de 6 envios por dia.</p>
+    </details>
+  {% elif rede == "tiktok" %}
+    {% if not conta %}{% if pub.configurado() %}<a class="botao" href="/contas/tiktok/conectar">Conectar TikTok</a>{% endif %}{% endif %}
+    <details {{ 'open' if not pub.configurado() }} style="margin-top: 12px"><summary>Como configurar</summary>
+    <ol class="passos">
+      <li>Em <a href="https://developers.tiktok.com/" target="_blank" rel="noopener">developers.tiktok.com</a>, crie um app e adicione os produtos <b>Login Kit</b> e <b>Content Posting API</b> (com <i>Direct Post</i> ligado).</li>
+      <li>Peça os escopos <code>user.info.basic</code> e <code>video.publish</code>.</li>
+      <li>Cadastre este endereço de retorno (redirect URI): <code>{{ callbacks.tiktok }}</code></li>
+      <li>Coloque a <i>Client key</i> e o <i>Client secret</i> no <code>config.yaml</code>, em <code>redes: tiktok:</code>, e reinicie o painel.</li>
+    </ol>
+    <p class="dica">Até o app ser auditado pelo TikTok, só é possível postar como "Só eu" (privado). Peça a auditoria cedo, porque pode levar semanas.</p>
+    </details>
+  {% elif rede == "instagram" %}
+    {% if not conta %}
+    <form method="post" action="/contas/instagram/token" class="linha">
+      <div style="flex: 3 1 320px"><label for="token">Token de acesso do Instagram</label><input id="token" name="token" type="password" required></div>
+      <div style="flex: 0 0 auto"><button type="submit">Conectar</button></div>
+    </form>
+    {% endif %}
+    <details {{ 'open' if not conta }} style="margin-top: 12px"><summary>Como conseguir o token</summary>
+    <ol class="passos">
+      <li>A conta do Instagram precisa ser <b>Profissional</b> (Criador de conteúdo ou Empresa).</li>
+      <li>Em <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener">developers.facebook.com</a>, crie um app e adicione o produto <b>Instagram</b> ("API com login do Instagram").</li>
+      <li>Em <i>Configuração da API</i>, adicione a sua conta e clique em <b>Gerar token</b>, com as permissões <code>instagram_business_basic</code> e <code>instagram_business_content_publish</code>.</li>
+      <li>Cole o token aqui. Ele vale 60 dias e o painel renova sozinho enquanto estiver em uso.</li>
+    </ol>
+    </details>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
