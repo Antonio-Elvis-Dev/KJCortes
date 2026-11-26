@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 PADRAO: dict[str, Any] = {
-    "pastas": {"cache": "cache", "saida": "saida"},
+    "pastas": {"cache": "cache", "saida": "saida", "dados": "dados"},
     "transcricao": {"modelo": "large-v3", "dispositivo": "auto", "idioma": "pt"},
     "cortes": {"quantidade": 5, "duracao_min": 20, "duracao_max": 60, "intervalo_min": 30},
     "pontuacao": {"audio": 1.0, "chat": 1.5, "fala": 0.5, "ia": 2.0},

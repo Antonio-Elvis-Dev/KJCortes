@@ -2,7 +2,7 @@
 
 Gera cortes verticais (9:16), legendados e prontos para TikTok, Reels e Shorts a partir de lives e vídeos de streamers no YouTube e na Twitch. Cada corte sai com o crédito do streamer e o link do momento original, para ser postado apenas com autorização do criador.
 
-Esta é a **etapa 1** do projeto: o motor de cortes, que roda no seu computador. O painel de revisão e a postagem automática vêm nas próximas etapas.
+O projeto tem duas partes prontas: o **motor de cortes** (linha de comando) e o **painel web**, onde você cadastra os streamers e as autorizações, envia vídeos e revisa cada corte antes de postar. A postagem automática vem na próxima etapa.
 
 ## Como funciona
 
@@ -56,7 +56,29 @@ kjcortes cortar "<link>" --modelo small
 
 Outras opções: `--layout centro`, `--sem-chat`, `--sem-legenda`, `-v` (mais detalhes) e `kjcortes cortar --help`.
 
-## O que sai
+## Painel
+
+```bash
+kjcortes painel
+```
+
+Abra http://localhost:8000 no navegador. No painel:
+
+1. **Streamers**: cadastre o nome, os canais da Twitch e do YouTube e o @ de cada rede (TikTok, Instagram, YouTube). Em seguida registre a **autorização** (tipo, data, validade opcional) e anexe a prova: print da conversa, PDF do contrato etc.
+2. **Início**: escolha o streamer, cole o link do vídeo e clique em *Gerar cortes*. Os vídeos são processados um por vez, em segundo plano.
+3. **Revisar cortes**: assista cada corte, ajuste o título e as legendas de cada rede (já vêm com o crédito e o @ do streamer) e aprove ou rejeite.
+
+Proteções contra strike:
+
+- Só streamers **ativos** e com **autorização vigente** (não revogada e dentro da validade) aparecem para envio.
+- Antes de baixar, o sistema confere se o vídeo é de um **canal cadastrado** daquele streamer. Se for de outro canal, o vídeo é recusado e o motivo aparece na tela.
+- Revogar uma autorização bloqueia na hora novos vídeos daquele streamer.
+
+O banco de dados e as provas ficam na pasta `dados/`. Faça backup dela.
+
+O painel só aceita conexões deste computador. Para abrir para a rede (por exemplo, na VPS), use `kjcortes painel --host 0.0.0.0` e defina uma senha com a variável `KJCORTES_SENHA`.
+
+## O que sai do motor de cortes
 
 Em `saida/<plataforma>_<id>/`:
 
@@ -82,6 +104,5 @@ O teste de ponta a ponta gera um vídeo sintético e roda o fluxo inteiro (sem b
 
 ## Próximas etapas
 
-2. Cadastro dos streamers autorizados (com prova da autorização e @ de cada rede) e painel para revisar os cortes.
 3. Postagem automática no TikTok, Instagram Reels e YouTube Shorts, com crédito e menção.
 4. Docker e fila de tarefas para rodar em uma VPS.

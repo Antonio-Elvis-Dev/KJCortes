@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% set aba = "cortes" %}
+{% block titulo %}{{ c.titulo or "Corte" }} · KJCortes{% endblock %}
+{% block conteudo %}
+<p><a href="/cortes">← Voltar para a lista</a></p>
+<div class="revisao">
+  <div>
+    <video src="/midia/cortes/{{ c.id }}" controls playsinline></video>
+    <p class="dica">
+      {{ c.streamer_nome }} · trecho {{ c.inicio|tempo }} a {{ c.fim|tempo }} · nota {{ "%.2f"|format(c.nota) }}<br>
+      {% if c.link_original %}<a href="{{ c.link_original }}" target="_blank" rel="noopener">Abrir o momento no vídeo original</a>{% endif %}
+    </p>
+  </div>
+  <form method="post" action="/cortes/{{ c.id }}" class="cartao">
+    <h1 style="display: flex; gap: 10px; align-items: center">Corte {{ c.numero }} <span class="selo {{ c.status }}">{{ c.status }}</span></h1>
+    <input type="hidden" name="proximo" value="{{ proximo or '' }}">
+    <div class="campo"><label for="titulo">Título</label><input id="titulo" name="titulo" value="{{ c.titulo }}"></div>
+    <div class="campo"><label for="legenda_tiktok">Legenda do TikTok</label><textarea id="legenda_tiktok" name="legenda_tiktok">{{ c.legenda_tiktok }}</textarea></div>
+    <div class="campo"><label for="legenda_instagram">Legenda do Instagram (Reels)</label><textarea id="legenda_instagram" name="legenda_instagram">{{ c.legenda_instagram }}</textarea></div>
+    <div class="campo"><label for="titulo_youtube">Título do YouTube Shorts</label><input id="titulo_youtube" name="titulo_youtube" maxlength="100" value="{{ c.titulo_youtube }}"></div>
+    <div class="campo"><label for="descricao_youtube">Descrição do YouTube Shorts</label><textarea id="descricao_youtube" name="descricao_youtube">{{ c.descricao_youtube }}</textarea></div>
+    <div class="acoes">
+      <button class="ok" name="acao" value="aprovado">Aprovar{% if proximo %} e ir para o próximo{% endif %}</button>
+      <button class="ruim" name="acao" value="rejeitado">Rejeitar</button>
+      <button class="secundario" name="acao" value="salvar">Só salvar textos</button>
+      {% if c.status != "pendente" %}<button class="secundario" name="acao" value="pendente">Voltar para pendente</button>{% endif %}
+    </div>
+    {% if c.transcricao %}
+    <h2>Transcrição do trecho</h2>
+    <p class="dica">{{ c.transcricao }}</p>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

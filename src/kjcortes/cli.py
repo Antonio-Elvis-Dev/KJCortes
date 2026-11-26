@@ -26,6 +26,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--sem-legenda", action="store_true", help="Não grava legendas no vídeo")
     p.add_argument("-v", "--verbose", action="store_true", help="Mostra mais detalhes")
 
+    w = sub.add_parser("painel", help="Abre o painel web (streamers, envio de vídeos e revisão dos cortes)")
+    w.add_argument("-c", "--config", help="Arquivo de configuração (padrão: ./config.yaml)")
+    w.add_argument("--host", default="127.0.0.1", help="Endereço (padrão: só este computador)")
+    w.add_argument("--porta", type=int, default=8000)
+    w.add_argument("-v", "--verbose", action="store_true", help="Mostra mais detalhes")
+
     args = parser.parse_args(argv)
     # No Windows o console usa cp1252 e quebra com emojis dos títulos dos vídeos.
     for fluxo in (sys.stdout, sys.stderr):
@@ -34,6 +40,13 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 
     cfg = config.carregar(args.config)
+    if args.comando == "painel":
+        from .web.app import rodar
+
+        print(f"Painel em http://{'localhost' if args.host == '127.0.0.1' else args.host}:{args.porta}")
+        rodar(cfg, args.host, args.porta)
+        return 0
+
     if args.quantidade:
         cfg["cortes"]["quantidade"] = args.quantidade
     if args.ia:

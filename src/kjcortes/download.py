@@ -29,12 +29,41 @@ class Fonte:
         return d
 
 
-def baixar_video(url: str, pasta_cache: Path) -> Fonte:
+def identificar(url: str) -> dict:
+    """Lê os dados do vídeo sem baixar (título, canal e os links possíveis do canal)."""
+    import yt_dlp
+
+    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "skip_download": True}) as ydl:
+        info = ydl.extract_info(url, download=False)
+    info["_canal_urls"] = canais_do_info(info)
+    return info
+
+
+def canais_do_info(info: dict) -> list[str]:
+    """Todos os links que identificam o canal dono do vídeo (YouTube tem @handle e /channel/UC...)."""
+    urls = [info.get(k) for k in ("uploader_url", "channel_url")]
+    plataforma = (info.get("extractor_key") or "").lower()
+    if plataforma.startswith("twitch"):
+        for k in ("uploader_id", "channel_id", "uploader"):
+            if info.get(k):
+                urls.append(f"https://www.twitch.tv/{str(info[k]).lower()}")
+    if plataforma == "youtube" and info.get("channel_id"):
+        urls.append(f"https://www.youtube.com/channel/{info['channel_id']}")
+    if plataforma == "youtube" and info.get("uploader_id", "").startswith("@"):
+        urls.append(f"https://www.youtube.com/{info['uploader_id']}")
+    vistos: list[str] = []
+    for u in urls:
+        if u and u not in vistos:
+            vistos.append(u)
+    return vistos
+
+
+def baixar_video(url: str, pasta_cache: Path, info: dict | None = None) -> Fonte:
     """Baixa o vídeo em até 1080p para pasta_cache/<id>/video.mp4 (reaproveita se já existir)."""
     import yt_dlp
 
-    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
-        info = ydl.extract_info(url, download=False)
+    if info is None:
+        info = identificar(url)
 
     pasta = pasta_cache / _seguro(f"{info.get('extractor_key', 'video')}_{info['id']}")
     pasta.mkdir(parents=True, exist_ok=True)
@@ -62,7 +91,7 @@ def baixar_video(url: str, pasta_cache: Path) -> Fonte:
         url=info.get("webpage_url") or url,
         titulo=info.get("title") or "",
         canal=info.get("uploader") or info.get("channel") or "",
-        canal_url=info.get("uploader_url") or info.get("channel_url") or "",
+        canal_url=(canais_do_info(info) or [""])[0],
         plataforma=(info.get("extractor_key") or "").lower(),
         duracao=float(info.get("duration") or 0),
         arquivo=arquivo,

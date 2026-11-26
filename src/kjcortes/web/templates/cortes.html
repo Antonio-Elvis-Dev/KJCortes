@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% set aba = "cortes" %}
+{% block conteudo %}
+<h1>Revisar cortes</h1>
+<div class="abas">
+  {% for st, nome in [("pendente", "Pendentes"), ("aprovado", "Aprovados"), ("rejeitado", "Rejeitados"), ("todos", "Todos")] %}
+  <a href="/cortes?status={{ st }}{% if video %}&video={{ video }}{% endif %}" class="{{ 'ativo' if status == st }}">{{ nome }}{% if st in contagem %} ({{ contagem[st] }}){% endif %}</a>
+  {% endfor %}
+</div>
+{% if cortes %}
+<div class="grade">
+  {% for c in cortes %}
+  <a class="miniatura" href="/cortes/{{ c.id }}">
+    <video src="/midia/cortes/{{ c.id }}#t=1" preload="metadata" muted></video>
+    <div class="info">
+      <div class="titulo">{{ c.titulo or "Sem título" }}</div>
+      <div class="dica">{{ c.streamer_nome }} · {{ (c.fim - c.inicio)|round|int }}s</div>
+      <span class="selo {{ c.status }}">{{ c.status }}</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="dica">Nenhum corte aqui.</p>
+{% endif %}
+{% endblock %}

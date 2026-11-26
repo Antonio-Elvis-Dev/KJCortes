@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% set aba = "streamers" %}
+{% block conteudo %}
+<h1>Streamers</h1>
+{% if streamers %}
+<div class="cartao" style="padding: 6px 12px">
+<table>
+  <tr><th>Nome</th><th>Canais</th><th>Redes</th><th>Autorização</th></tr>
+  {% for s in streamers %}
+  <tr>
+    <td><a href="/streamers/{{ s.id }}">{{ s.nome }}</a>{% if not s.ativo %} <span class="selo">inativo</span>{% endif %}</td>
+    <td class="dica">{{ s.canal_twitch }}{% if s.canal_twitch and s.canal_youtube %}<br>{% endif %}{{ s.canal_youtube }}</td>
+    <td class="dica">
+      {% if s.arroba_tiktok %}TikTok @{{ s.arroba_tiktok }}<br>{% endif %}
+      {% if s.arroba_instagram %}Instagram @{{ s.arroba_instagram }}<br>{% endif %}
+      {% if s.arroba_youtube %}YouTube @{{ s.arroba_youtube }}{% endif %}
+    </td>
+    <td>{% if s.autorizado %}<span class="selo sim">vigente</span>{% else %}<span class="selo nao">sem autorização</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+<div class="cartao">
+  <h2 style="margin-top: 0">Cadastrar streamer</h2>
+  <form method="post" action="/streamers">
+    {% set s = {"ativo": 1} %}
+    {% include "_form_streamer.html" %}
+    <button type="submit">Cadastrar</button>
+  </form>
+</div>
+{% endblock %}

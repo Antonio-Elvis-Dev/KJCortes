@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% set aba = "streamers" %}
+{% block titulo %}{{ s.nome }} · KJCortes{% endblock %}
+{% block conteudo %}
+<h1>{{ s.nome }}
+  {% if vigente %}<span class="selo sim">autorizado</span>{% else %}<span class="selo nao">sem autorização vigente</span>{% endif %}
+</h1>
+
+<div class="cartao">
+  <form method="post" action="/streamers/{{ s.id }}">
+    {% include "_form_streamer.html" %}
+    <button type="submit">Salvar</button>
+  </form>
+</div>
+
+<h2>Autorizações</h2>
+{% if autorizacoes %}
+<div class="cartao" style="padding: 6px 12px">
+<table>
+  <tr><th>Tipo</th><th>Concedida em</th><th>Válida até</th><th>Detalhes</th><th>Prova</th><th></th></tr>
+  {% for a in autorizacoes %}
+  <tr>
+    <td>{{ TIPOS_AUTORIZACAO.get(a.tipo, a.tipo) }}</td>
+    <td>{{ a.concedida_em }}</td>
+    <td>{{ a.valida_ate or "sem prazo" }}</td>
+    <td class="dica">{{ a.descricao }}</td>
+    <td>{% if a.arquivo %}<a href="/autorizacoes/{{ a.id }}/prova" target="_blank">ver arquivo</a>{% else %}–{% endif %}</td>
+    <td>{% if a.revogada %}<span class="selo nao">revogada</span>{% else %}
+      <form method="post" action="/autorizacoes/{{ a.id }}/revogar" onsubmit="return confirm('Revogar esta autorização? Novos vídeos deste streamer serão bloqueados.')">
+        <button class="secundario" type="submit">Revogar</button></form>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<p class="dica">Nenhuma autorização registrada. Sem ela, os vídeos deste streamer não podem ser processados.</p>
+{% endif %}
+
+<div class="cartao">
+  <h2 style="margin-top: 0">Registrar autorização</h2>
+  <form method="post" action="/streamers/{{ s.id }}/autorizacoes" enctype="multipart/form-data">
+    <div class="linha">
+      <div class="campo"><label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo">{% for k, v in TIPOS_AUTORIZACAO.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <div class="campo"><label for="concedida_em">Concedida em</label><input id="concedida_em" type="date" name="concedida_em" value="{{ hoje }}" required></div>
+      <div class="campo"><label for="valida_ate">Válida até (opcional)</label><input id="valida_ate" type="date" name="valida_ate"></div>
+    </div>
+    <div class="campo"><label for="descricao">Descrição</label><textarea id="descricao" name="descricao" style="min-height: 70px" placeholder="Ex.: autorizou por DM no Instagram em 20/11, pode postar cortes em todas as redes"></textarea></div>
+    <div class="campo"><label for="prova">Prova (print, PDF ou TXT, até 20 MB)</label><input id="prova" type="file" name="prova" accept=".png,.jpg,.jpeg,.webp,.pdf,.txt"></div>
+    <button type="submit">Registrar</button>
+    <p class="dica">Guarde sempre uma prova. Se uma rede questionar os direitos de um corte, é ela que você vai apresentar.</p>
+  </form>
+</div>
+{% endblock %}
