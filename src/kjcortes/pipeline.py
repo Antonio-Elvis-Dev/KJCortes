@@ -28,7 +28,7 @@ def fonte_local(caminho: Path, pasta_cache: Path, canal: str) -> download.Fonte:
     ident = hashlib.sha1(str(caminho).encode()).hexdigest()[:10]
     duracao = float(subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(caminho)],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     ).stdout.strip() or 0)
     (pasta_cache / f"local_{ident}").mkdir(parents=True, exist_ok=True)
     return download.Fonte(ident, str(caminho), caminho.stem, canal, "", "local", duracao, caminho)
@@ -114,13 +114,13 @@ def executar(entrada: str, cfg: dict, canal: str = "", usar_chat: bool = True, l
             "fonte": fonte.para_dict(),
         }
         arq_meta = pasta_saida / f"{nome}.json"
-        arq_meta.write_text(json.dumps(meta, ensure_ascii=False, indent=2))
+        arq_meta.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
         cortes.append(Corte(n, mp4, arq_meta, cand))
 
     (pasta_saida / "resumo.json").write_text(json.dumps(
-        {"fonte": fonte.para_dict(), "cortes": [json.loads(c.metadados.read_text()) for c in cortes]},
+        {"fonte": fonte.para_dict(), "cortes": [json.loads(c.metadados.read_text(encoding="utf-8")) for c in cortes]},
         ensure_ascii=False, indent=2,
-    ))
+    ), encoding="utf-8")
     return cortes
 
 

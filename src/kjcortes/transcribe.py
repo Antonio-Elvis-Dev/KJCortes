@@ -63,12 +63,12 @@ def transcrever(audio: Path, pasta: Path, modelo: str, dispositivo: str, idioma:
         segmentos.append(Segmento(float(t.start), float(t.end), t.text.strip(), palavras))
     log.info("Transcrição pronta: %d trechos, idioma %s", len(segmentos), info.language)
 
-    cache.write_text(json.dumps([asdict(s) for s in segmentos], ensure_ascii=False))
+    cache.write_text(json.dumps([asdict(s) for s in segmentos], ensure_ascii=False), encoding="utf-8")
     return segmentos
 
 
 def carregar(caminho: Path) -> list[Segmento]:
-    dados = json.loads(Path(caminho).read_text())
+    dados = json.loads(Path(caminho).read_text(encoding="utf-8"))
     return [
         Segmento(s["inicio"], s["fim"], s["texto"], [Palavra(**p) for p in s.get("palavras", [])])
         for s in dados

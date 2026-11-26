@@ -67,7 +67,7 @@ def baixar_video(url: str, pasta_cache: Path) -> Fonte:
         duracao=float(info.get("duration") or 0),
         arquivo=arquivo,
     )
-    (pasta / "fonte.json").write_text(json.dumps(fonte.para_dict(), ensure_ascii=False, indent=2))
+    (pasta / "fonte.json").write_text(json.dumps(fonte.para_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
     return fonte
 
 
@@ -79,7 +79,7 @@ def baixar_chat(url: str, pasta: Path) -> list[float]:
     """
     cache = pasta / "chat.json"
     if cache.exists():
-        return json.loads(cache.read_text())
+        return json.loads(cache.read_text(encoding="utf-8"))
 
     try:
         from chat_downloader import ChatDownloader
@@ -97,7 +97,7 @@ def baixar_chat(url: str, pasta: Path) -> list[float]:
         log.warning("Não foi possível baixar o chat: %s", erro)
         return []
 
-    cache.write_text(json.dumps(tempos))
+    cache.write_text(json.dumps(tempos), encoding="utf-8")
     log.info("Chat: %d mensagens", len(tempos))
     return tempos
 

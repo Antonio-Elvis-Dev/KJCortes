@@ -37,7 +37,7 @@ def test_fluxo_completo(tmp_path, monkeypatch):
     cfg["video"].update(largura=360, altura=640, encoder="libx264")
     cfg["legenda"]["tamanho"] = 30
 
-    cortes = pipeline.executar(str(video), cfg, canal="StreamerTeste")
+    cortes = pipeline.executar(str(video), cfg, canal="StreamerTeste 🤑 ação")
 
     assert len(cortes) == 2
     # O trecho barulhento (70-80 s) precisa estar entre os escolhidos.
@@ -49,5 +49,5 @@ def test_fluxo_completo(tmp_path, monkeypatch):
         v = next(s for s in info["streams"] if s["codec_type"] == "video")
         assert (v["width"], v["height"]) == (360, 640)
         assert any(s["codec_type"] == "audio" for s in info["streams"])
-        meta = json.loads(c.metadados.read_text())
-        assert "StreamerTeste" in meta["credito"]
+        meta = json.loads(c.metadados.read_text(encoding="utf-8"))
+        assert "StreamerTeste 🤑 ação" in meta["credito"]
