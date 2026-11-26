@@ -42,7 +42,8 @@ def texto_credito(fonte: download.Fonte) -> str:
     return linha + ". Corte publicado com autorização do criador."
 
 
-def executar(entrada: str, cfg: dict, canal: str = "", usar_chat: bool = True, legendar: bool = True) -> list[Corte]:
+def executar(entrada: str, cfg: dict, canal: str = "", usar_chat: bool = True, legendar: bool = True,
+             info: dict | None = None) -> list[Corte]:
     pasta_cache = Path(cfg["pastas"]["cache"])
     pasta_cache.mkdir(parents=True, exist_ok=True)
 
@@ -52,7 +53,7 @@ def executar(entrada: str, cfg: dict, canal: str = "", usar_chat: bool = True, l
         pasta = pasta_cache / f"local_{fonte.id}"
         usar_chat = False
     else:
-        fonte = download.baixar_video(entrada, pasta_cache)
+        fonte = download.baixar_video(entrada, pasta_cache, info)
         pasta = fonte.arquivo.parent
         if canal:
             fonte.canal = canal

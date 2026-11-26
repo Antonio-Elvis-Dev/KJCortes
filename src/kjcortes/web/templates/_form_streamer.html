@@ -1,0 +1,15 @@
+<div class="linha">
+  <div class="campo"><label for="nome">Nome</label><input id="nome" name="nome" value="{{ s.nome or '' }}" required></div>
+  <div class="campo"><label for="hashtags">Hashtags fixas</label><input id="hashtags" name="hashtags" value="{{ s.hashtags or '' }}" placeholder="#gaming #valorant"></div>
+</div>
+<div class="linha">
+  <div class="campo"><label for="canal_twitch">Canal na Twitch</label><input id="canal_twitch" name="canal_twitch" value="{{ s.canal_twitch or '' }}" placeholder="https://www.twitch.tv/nome"></div>
+  <div class="campo"><label for="canal_youtube">Canal no YouTube</label><input id="canal_youtube" name="canal_youtube" value="{{ s.canal_youtube or '' }}" placeholder="https://www.youtube.com/@nome"></div>
+</div>
+<div class="linha">
+  <div class="campo"><label for="arroba_tiktok">@ no TikTok</label><input id="arroba_tiktok" name="arroba_tiktok" value="{{ s.arroba_tiktok or '' }}"></div>
+  <div class="campo"><label for="arroba_instagram">@ no Instagram</label><input id="arroba_instagram" name="arroba_instagram" value="{{ s.arroba_instagram or '' }}"></div>
+  <div class="campo"><label for="arroba_youtube">@ no YouTube</label><input id="arroba_youtube" name="arroba_youtube" value="{{ s.arroba_youtube or '' }}"></div>
+</div>
+<div class="campo"><label for="credito_extra">Texto extra no crédito (opcional)</label><input id="credito_extra" name="credito_extra" value="{{ s.credito_extra or '' }}" placeholder="Ao vivo de seg a sex, 20h, na Twitch"></div>
+<div class="campo"><label><input type="checkbox" name="ativo" {{ 'checked' if s.ativo }}> Ativo (desmarque para pausar cortes deste streamer)</label></div>

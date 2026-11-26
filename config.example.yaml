@@ -2,6 +2,7 @@
 
 pastas:
   cache: cache          # vídeos baixados, áudio, transcrições e chat
+  dados: dados          # banco do painel (streamers, autorizações, cortes) e provas
   saida: saida          # cortes finais (.mp4 + .json)
 
 transcricao:

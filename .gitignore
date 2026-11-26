@@ -8,3 +8,4 @@ saida/
 cache/
 config.yaml
 .env
+dados/

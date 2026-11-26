@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% set aba = "inicio" %}
+{% block cabecalho %}{% if processando %}<meta http-equiv="refresh" content="10">{% endif %}{% endblock %}
+{% block conteudo %}
+<div class="numeros">
+  <a href="/cortes?status=pendente"><b>{{ contagem.pendente }}</b>cortes para revisar</a>
+  <a href="/cortes?status=aprovado"><b>{{ contagem.aprovado }}</b>aprovados</a>
+  <a href="/cortes?status=rejeitado"><b>{{ contagem.rejeitado }}</b>rejeitados</a>
+</div>
+
+<div class="cartao">
+  <h1>Novo vídeo</h1>
+  {% if streamers %}
+  <form method="post" action="/videos" class="linha">
+    <div>
+      <label for="streamer_id">Streamer</label>
+      <select id="streamer_id" name="streamer_id" required>
+        {% for s in streamers %}<option value="{{ s.id }}">{{ s.nome }}</option>{% endfor %}
+      </select>
+    </div>
+    <div style="flex: 3 1 320px">
+      <label for="url">Link do vídeo (YouTube ou Twitch) ou caminho de um arquivo</label>
+      <input id="url" name="url" placeholder="https://www.twitch.tv/videos/..." required>
+    </div>
+    <div style="flex: 0 0 auto"><button type="submit">Gerar cortes</button></div>
+  </form>
+  <p class="dica">Só aparecem streamers com autorização vigente. O vídeo precisa ser de um canal cadastrado do streamer escolhido.</p>
+  {% else %}
+  <p>Nenhum streamer com autorização vigente. <a href="/streamers">Cadastre um streamer e a autorização dele</a> para começar.</p>
+  {% endif %}
+</div>
+
+<h2>Vídeos recentes</h2>
+{% if videos %}
+<div class="cartao" style="padding: 6px 12px">
+<table>
+  <tr><th>Vídeo</th><th>Streamer</th><th>Situação</th><th>Cortes</th></tr>
+  {% for v in videos %}
+  <tr>
+    <td><a href="{{ v.url }}" target="_blank" rel="noopener">{{ v.titulo or v.url }}</a>
+      {% if v.status == "erro" %}<div class="erro-video">{{ v.erro }}</div>{% endif %}</td>
+    <td>{{ v.streamer_nome }}</td>
+    <td><span class="selo {{ v.status }}">{{ {"na_fila": "na fila", "processando": "processando", "pronto": "pronto", "erro": "erro"}[v.status] }}</span></td>
+    <td>{% if v.total_cortes %}<a href="/cortes?status=todos&video={{ v.id }}">{{ v.total_cortes }} cortes</a>{% else %}–{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% if processando %}<p class="dica">Esta página se atualiza sozinha enquanto há vídeos sendo processados.</p>{% endif %}
+{% else %}
+<p class="dica">Nenhum vídeo enviado ainda.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}KJCortes{% endblock %}</title>
+  <link rel="stylesheet" href="/static/estilo.css">
+  {% block cabecalho %}{% endblock %}
+</head>
+<body>
+  <header>
+    <a class="marca" href="/">KJ<span>Cortes</span></a>
+    <nav>
+      <a href="/" class="{{ 'ativo' if aba == 'inicio' }}">Início</a>
+      <a href="/cortes" class="{{ 'ativo' if aba == 'cortes' }}">Revisar cortes</a>
+      <a href="/streamers" class="{{ 'ativo' if aba == 'streamers' }}">Streamers</a>
+    </nav>
+  </header>
+  <main>
+    {% if erro %}<div class="aviso">{{ erro }}</div>{% endif %}
+    {% block conteudo %}{% endblock %}
+  </main>
+</body>
+</html>
