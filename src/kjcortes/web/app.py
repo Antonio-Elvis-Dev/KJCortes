@@ -9,14 +9,19 @@ import re
 import time
 from datetime import date
 from pathlib import Path
+from urllib.parse import quote_plus
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from ..db import STATUS_CORTE, Banco
+from ..agendador import Agendador
+from ..db import REDES, STATUS_CORTE, Banco
 from ..jobs import Fila
+from ..redes import ErroRede, publicadores
+from ..redes.tiktok import PRIVACIDADES as PRIV_TIKTOK
+from ..redes.youtube import PRIVACIDADES as PRIV_YOUTUBE
 
 AQUI = Path(__file__).parent
 EXTENSOES_PROVA = {".png", ".jpg", ".jpeg", ".webp", ".pdf", ".txt"}
@@ -30,21 +35,27 @@ TIPOS_AUTORIZACAO = {
 }
 
 
-def criar_app(cfg: dict, iniciar_fila: bool = True) -> FastAPI:
+def criar_app(cfg: dict, iniciar_fila: bool = True, http=None) -> FastAPI:
     pasta_dados = Path(cfg["pastas"]["dados"])
     pasta_provas = pasta_dados / "provas"
     pasta_provas.mkdir(parents=True, exist_ok=True)
     banco = Banco(pasta_dados / "kjcortes.db")
     fila = Fila(banco, cfg)
+    pubs = publicadores(banco, cfg, http)
+    agendador = Agendador(banco, pubs)
     if iniciar_fila:
         fila.iniciar()
+        agendador.iniciar()
+    sessoes_oauth: dict[str, tuple[str, dict]] = {}
 
     app = FastAPI(title="KJCortes", docs_url=None, redoc_url=None)
     app.state.banco = banco
     app.state.fila = fila
+    app.state.agendador = agendador
     app.mount("/static", StaticFiles(directory=AQUI / "static"), name="static")
     tpl = Jinja2Templates(directory=AQUI / "templates")
-    tpl.env.globals.update(TIPOS_AUTORIZACAO=TIPOS_AUTORIZACAO, STATUS_CORTE=STATUS_CORTE)
+    tpl.env.globals.update(TIPOS_AUTORIZACAO=TIPOS_AUTORIZACAO, STATUS_CORTE=STATUS_CORTE, PUBS=pubs,
+                           PRIV_TIKTOK=PRIV_TIKTOK, PRIV_YOUTUBE=PRIV_YOUTUBE)
     tpl.env.filters["tempo"] = lambda s: f"{int(s // 3600)}:{int(s % 3600 // 60):02d}:{int(s % 60):02d}"
 
     senha = os.environ.get("KJCORTES_SENHA", "")
@@ -184,10 +195,21 @@ def criar_app(cfg: dict, iniciar_fila: bool = True) -> FastAPI:
         })
 
     @app.get("/cortes/{cid}")
-    def ver_corte(request: Request, cid: int):
+    def ver_corte(request: Request, cid: int, erro: str = ""):
         c = banco.corte(cid) or _404()
         proximo = next((x["id"] for x in reversed(banco.cortes("pendente")) if x["id"] != cid), None)
-        return tpl.TemplateResponse(request, "corte.html", {"c": c, "proximo": proximo})
+        tiktok = {}
+        if c["status"] == "aprovado" and pubs["tiktok"].conta():
+            try:
+                tiktok = pubs["tiktok"].info_criador()
+            except ErroRede as e:
+                tiktok = {"erro": str(e)}
+        return tpl.TemplateResponse(request, "corte.html", {
+            "c": c, "proximo": proximo, "postagens": banco.postagens(cid), "tiktok": tiktok, "erro": erro,
+            "conectadas": {r: pubs[r].conta() for r in REDES},
+            "ativas": {r for r in REDES if banco.postagem_ativa(cid, r)},
+            "autorizado": banco.autorizacao_valida(c["streamer_id"]) is not None,
+        })
 
     @app.post("/cortes/{cid}")
     async def salvar_corte(request: Request, cid: int):
@@ -209,6 +231,115 @@ def criar_app(cfg: dict, iniciar_fila: bool = True) -> FastAPI:
         if not caminho.exists():
             _404()
         return FileResponse(caminho, media_type="video/mp4")
+
+    # Postagem -----------------------------------------------------------------
+
+    @app.post("/cortes/{cid}/postar")
+    async def postar(request: Request, cid: int):
+        c = banco.corte(cid) or _404()
+        form = await request.form()
+        if c["status"] != "aprovado":
+            return voltar(f"/cortes/{cid}?erro=Aprove+o+corte+antes+de+postar")
+        if not banco.autorizacao_valida(c["streamer_id"]):
+            return voltar(f"/cortes/{cid}?erro=Streamer+sem+autorização+vigente")
+        redes = [r for r in REDES if form.get(f"rede_{r}") == "on"]
+        if not redes:
+            return voltar(f"/cortes/{cid}?erro=Escolha+ao+menos+uma+rede")
+        if "tiktok" in redes and form.get("tiktok_consentimento") != "on":
+            return voltar(f"/cortes/{cid}?erro=Para+o+TikTok,+confirme+a+declaração+de+uso+de+música")
+        quando = (form.get("agendar_para") or "").strip()
+        if quando:
+            quando = quando if len(quando) > 16 else quando + ":00"
+        opcoes = {
+            "youtube": {"privacidade": form.get("youtube_privacidade") or "public"},
+            "tiktok": {"privacidade": form.get("tiktok_privacidade") or "",
+                       "sem_comentarios": form.get("tiktok_sem_comentarios") == "on",
+                       "sem_dueto": form.get("tiktok_sem_dueto") == "on",
+                       "sem_stitch": form.get("tiktok_sem_stitch") == "on"},
+            "instagram": {},
+        }
+        for r in redes:
+            if not pubs[r].conta():
+                return voltar(f"/cortes/{cid}?erro=Conecte+a+conta+do+{pubs[r].nome}+primeiro")
+            if banco.postagem_ativa(cid, r):
+                continue  # já agendado ou publicado nesta rede
+            if r == "tiktok" and not opcoes["tiktok"]["privacidade"]:
+                return voltar(f"/cortes/{cid}?erro=Escolha+quem+pode+ver+o+vídeo+no+TikTok")
+            banco.criar_postagem(cid, r, quando, opcoes[r])
+        agendador.acordar()
+        return voltar(f"/cortes/{cid}")
+
+    @app.get("/postagens")
+    def lista_postagens(request: Request):
+        return tpl.TemplateResponse(request, "postagens.html", {"postagens": banco.postagens(limite=200)})
+
+    @app.post("/postagens/{pid}/cancelar")
+    def cancelar_postagem(pid: int, voltar_para: str = Form("/postagens")):
+        p = banco.postagem(pid) or _404()
+        if p["status"] == "agendada":
+            banco.atualizar_postagem(pid, status="cancelada")
+        return voltar(voltar_para if voltar_para.startswith("/") else "/postagens")
+
+    @app.post("/postagens/{pid}/repetir")
+    def repetir_postagem(pid: int, voltar_para: str = Form("/postagens")):
+        p = banco.postagem(pid) or _404()
+        if p["status"] in ("erro", "cancelada") and not banco.postagem_ativa(p["corte_id"], p["rede"]):
+            banco.criar_postagem(p["corte_id"], p["rede"], "", p["opcoes"])
+            agendador.acordar()
+        return voltar(voltar_para if voltar_para.startswith("/") else "/postagens")
+
+    # Contas -------------------------------------------------------------------
+
+    def _redirect_uri(request: Request, rede: str) -> str:
+        base = (cfg.get("redes", {}).get("url_painel") or str(request.base_url)).rstrip("/")
+        return f"{base}/contas/{rede}/callback"
+
+    @app.get("/contas")
+    def contas(request: Request, erro: str = "", ok: str = ""):
+        return tpl.TemplateResponse(request, "contas.html", {
+            "redes": [(r, pubs[r], pubs[r].conta()) for r in REDES], "erro": erro, "ok": ok,
+            "callbacks": {r: _redirect_uri(request, r) for r in ("youtube", "tiktok")},
+        })
+
+    @app.get("/contas/{rede}/conectar")
+    def conectar(request: Request, rede: str):
+        if rede not in ("youtube", "tiktok"):
+            _404()
+        pub = pubs[rede]
+        if not pub.configurado():
+            return voltar(f"/contas?erro=Configure+o+app+do+{pub.nome}+primeiro+(veja+as+instruções+abaixo)")
+        url, sessao = pub.iniciar_autorizacao(_redirect_uri(request, rede))
+        sessoes_oauth[sessao["state"]] = (rede, sessao)
+        return RedirectResponse(url, status_code=302)
+
+    @app.get("/contas/{rede}/callback")
+    def callback(request: Request, rede: str, code: str = "", state: str = "", error: str = "",
+                 error_description: str = ""):
+        guardado = sessoes_oauth.pop(state, None)
+        if error or not code:
+            return voltar(f"/contas?erro={quote_plus(error_description or error or 'Autorização cancelada')}")
+        if not guardado or guardado[0] != rede:
+            return voltar("/contas?erro=Sessão+de+autorização+inválida+ou+expirada.+Tente+de+novo")
+        try:
+            pubs[rede].concluir_autorizacao(code, _redirect_uri(request, rede), guardado[1])
+        except ErroRede as e:
+            return voltar(f"/contas?erro={quote_plus(str(e)[:300])}")
+        return voltar(f"/contas?ok={pubs[rede].nome}+conectado")
+
+    @app.post("/contas/instagram/token")
+    def instagram_token(token: str = Form(...)):
+        try:
+            nome = pubs["instagram"].conectar_com_token(token)
+        except ErroRede as e:
+            return voltar(f"/contas?erro={quote_plus(str(e)[:300])}")
+        return voltar(f"/contas?ok={quote_plus('Instagram @' + nome + ' conectado')}")
+
+    @app.post("/contas/{rede}/remover")
+    def remover_conta(rede: str):
+        if rede not in REDES:
+            _404()
+        banco.remover_conta(rede)
+        return voltar("/contas")
 
     return app
 

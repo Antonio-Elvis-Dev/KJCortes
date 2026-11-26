@@ -54,3 +54,14 @@ th { color: var(--suave); font-size: 13px; }
 .abas a.ativo { background: var(--destaque); color: #111; border-color: var(--destaque); }
 .erro-video { color: #ffb4b6; font-size: 13px; white-space: pre-wrap; }
 @media (max-width: 760px) { .revisao { grid-template-columns: 1fr; } .revisao video { max-height: 70vh; } }
+.aviso.sucesso { background: rgba(47,191,113,.12); border-color: rgba(47,191,113,.4); color: #9be8bf; }
+.selo.agendada, .selo.enviando { background: rgba(62,142,247,.18); color: var(--info); }
+.selo.publicada { background: rgba(47,191,113,.18); color: var(--ok); }
+.selo.cancelada { background: var(--borda); color: var(--suave); }
+.rede { border: 1px solid var(--borda); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+.rede > label:first-child { color: var(--texto); font-size: 15px; display: flex; gap: 8px; align-items: center; margin-bottom: 0; }
+.rede .opcoes { margin-top: 10px; padding-left: 26px; }
+.rede.desligada { opacity: .55; }
+form.inline { display: inline; }
+code { background: var(--fundo); border: 1px solid var(--borda); border-radius: 5px; padding: 1px 6px; font-size: 13px; word-break: break-all; }
+ol.passos li { margin-bottom: 6px; }

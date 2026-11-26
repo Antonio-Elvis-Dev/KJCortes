@@ -2,7 +2,7 @@
 
 Gera cortes verticais (9:16), legendados e prontos para TikTok, Reels e Shorts a partir de lives e vídeos de streamers no YouTube e na Twitch. Cada corte sai com o crédito do streamer e o link do momento original, para ser postado apenas com autorização do criador.
 
-O projeto tem duas partes prontas: o **motor de cortes** (linha de comando) e o **painel web**, onde você cadastra os streamers e as autorizações, envia vídeos e revisa cada corte antes de postar. A postagem automática vem na próxima etapa.
+O projeto tem o **motor de cortes** (linha de comando) e o **painel web**, onde você cadastra os streamers e as autorizações, envia vídeos, revisa cada corte e posta ou agenda no YouTube Shorts, TikTok e Instagram Reels pelas APIs oficiais.
 
 ## Como funciona
 
@@ -78,6 +78,27 @@ O banco de dados e as provas ficam na pasta `dados/`. Faça backup dela.
 
 O painel só aceita conexões deste computador. Para abrir para a rede (por exemplo, na VPS), use `kjcortes painel --host 0.0.0.0` e defina uma senha com a variável `KJCORTES_SENHA`.
 
+## Postagem nas redes
+
+Na página **Contas** do painel, conecte cada rede (as instruções de configuração aparecem na própria página):
+
+| Rede | Como conecta | Limitações até o app ser aprovado |
+| --- | --- | --- |
+| YouTube Shorts | Login do Google. Baixe o JSON do *ID do cliente OAuth* (App para computador) para `dados/youtube_client_secret.json` | Vídeos ficam privados até a auditoria da API; cerca de 6 envios por dia |
+| TikTok | Login do TikTok. Coloque *client key* e *client secret* em `config.yaml` (`redes: tiktok:`) | Só posta como "Só eu" até o app passar pela auditoria do TikTok |
+| Instagram Reels | Cole um token gerado no painel de apps da Meta (conta Profissional) | Renova sozinho; vale 60 dias sem uso |
+
+Depois de aprovar um corte, a página dele mostra a seção **Postar**: marque as redes, escolha a visibilidade, a hora (ou deixe vazio para postar agora) e clique em *Postar*. A página **Postagens** mostra tudo o que foi agendado, publicado ou deu erro, com o link de cada vídeo publicado.
+
+Proteções:
+
+- A autorização do streamer é conferida de novo **na hora de postar**. Se ela for revogada ou vencer depois do corte, a postagem é bloqueada.
+- O mesmo corte não é postado duas vezes na mesma rede.
+- Se o painel for fechado no meio de um envio, a postagem vira erro em vez de ser reenviada, para não duplicar. Confira na rede e use *Tentar de novo* se precisar.
+- O agendador só roda com o painel aberto. Postagens com horário vencido saem assim que ele abrir de novo.
+
+O TikTok pode exigir que o endereço de retorno (redirect URI) seja HTTPS. Nesse caso, conecte a conta quando o painel estiver na VPS com domínio, ou use um túnel HTTPS (como o Cloudflare Tunnel) e defina `redes: url_painel:` com esse endereço.
+
 ## O que sai do motor de cortes
 
 Em `saida/<plataforma>_<id>/`:
@@ -104,5 +125,4 @@ O teste de ponta a ponta gera um vídeo sintético e roda o fluxo inteiro (sem b
 
 ## Próximas etapas
 
-3. Postagem automática no TikTok, Instagram Reels e YouTube Shorts, com crédito e menção.
 4. Docker e fila de tarefas para rodar em uma VPS.

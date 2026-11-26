@@ -40,3 +40,15 @@ legenda:
   cor: "&H00FFFFFF"       # branco (formato ASS: &HAABBGGRR)
   cor_destaque: "&H0000E5FF"  # amarelo na palavra falada
   posicao_vertical: 0.70  # 0 = topo, 1 = base
+
+redes:
+  # Endereço do painel usado nos retornos de login (redirect URI). Vazio = o endereço aberto no navegador.
+  url_painel: ""
+  youtube:
+    client_secret: ""       # vazio = dados/youtube_client_secret.json
+    privacidade_padrao: public
+    categoria: "20"         # 20 = Jogos
+  tiktok:
+    client_key: ""          # ou variável de ambiente TIKTOK_CLIENT_KEY
+    client_secret: ""       # ou TIKTOK_CLIENT_SECRET
+  # Instagram: conectado colando o token no painel (página Contas).

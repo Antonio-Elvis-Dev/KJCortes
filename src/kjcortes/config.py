@@ -15,6 +15,11 @@ PADRAO: dict[str, Any] = {
     "pontuacao": {"audio": 1.0, "chat": 1.5, "fala": 0.5, "ia": 2.0},
     "ia": {"ativa": False, "modelo": "claude-sonnet-5-5", "max_candidatos": 20},
     "video": {"layout": "desfoque", "largura": 1080, "altura": 1920, "encoder": "auto"},
+    "redes": {
+        "url_painel": "",
+        "youtube": {"client_secret": "", "privacidade_padrao": "public", "categoria": "20"},
+        "tiktok": {"client_key": "", "client_secret": ""},
+    },
     "legenda": {
         "fonte": "Montserrat ExtraBold",
         "tamanho": 84,
