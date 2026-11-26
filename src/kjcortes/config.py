@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import os
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +11,8 @@ import yaml
 
 PADRAO: dict[str, Any] = {
     "pastas": {"cache": "cache", "saida": "saida", "dados": "dados"},
-    "transcricao": {"modelo": "large-v3", "dispositivo": "auto", "idioma": "pt"},
+    "transcricao": {"provedor": "local", "modelo": "large-v3", "dispositivo": "auto", "idioma": "pt",
+                    "api_url": "", "api_modelo": ""},
     "cortes": {"quantidade": 5, "duracao_min": 20, "duracao_max": 60, "intervalo_min": 30},
     "pontuacao": {"audio": 1.0, "chat": 1.5, "fala": 0.5, "ia": 2.0},
     "ia": {"ativa": False, "modelo": "claude-sonnet-5-5", "max_candidatos": 20},
@@ -43,10 +45,13 @@ def _mesclar(base: dict, extra: dict) -> dict:
 def carregar(caminho: str | Path | None = None) -> dict[str, Any]:
     """Lê o YAML indicado (ou ./config.yaml, se existir) sobre os valores padrão."""
     cfg = copy.deepcopy(PADRAO)
+    caminho = caminho or os.environ.get("KJCORTES_CONFIG")
     arquivo = Path(caminho) if caminho else Path("config.yaml")
     if arquivo.exists():
         with arquivo.open(encoding="utf-8") as f:
             _mesclar(cfg, yaml.safe_load(f) or {})
     elif caminho:
         raise FileNotFoundError(f"Arquivo de configuração não encontrado: {arquivo}")
+    if os.environ.get("KJCORTES_URL_PAINEL"):
+        cfg["redes"]["url_painel"] = os.environ["KJCORTES_URL_PAINEL"]
     return cfg

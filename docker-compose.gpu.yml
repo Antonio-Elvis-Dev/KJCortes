@@ -1,0 +1,13 @@
+services:
+  painel:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: kjcortes:gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

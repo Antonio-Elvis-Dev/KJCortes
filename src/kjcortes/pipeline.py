@@ -66,7 +66,12 @@ def executar(entrada: str, cfg: dict, canal: str = "", usar_chat: bool = True, l
     chat = signals.chat_por_segundo(tempos_chat, duracao)
 
     t = cfg["transcricao"]
-    segmentos = transcribe.transcrever(wav, pasta, t["modelo"], t["dispositivo"], t["idioma"])
+    if t.get("provedor") == "api":
+        from .transcribe_api import transcrever_api
+
+        segmentos = transcrever_api(wav, pasta, t)
+    else:
+        segmentos = transcribe.transcrever(wav, pasta, t["modelo"], t["dispositivo"], t["idioma"])
     fala = signals.fala_por_segundo(segmentos, duracao)
 
     # 2. Trechos

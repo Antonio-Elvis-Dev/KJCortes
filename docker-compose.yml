@@ -1,0 +1,38 @@
+# Uso: copie .env.example para .env, ajuste e rode `docker compose up -d`.
+# Com domínio e HTTPS: `docker compose --profile https up -d`.
+# Com GPU NVIDIA: `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d`.
+services:
+  painel:
+    build: .
+    image: kjcortes:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      KJCORTES_CONFIG: /kjcortes/config.yaml
+      KJCORTES_ATRAS_DE_PROXY: "1"
+    volumes:
+      - ./config.yaml:/kjcortes/config.yaml:ro
+      - ./dados:/kjcortes/dados
+      - ./cache:/kjcortes/cache
+      - ./saida:/kjcortes/saida
+    # Só a própria máquina acessa direto; de fora, o acesso é pelo Caddy (HTTPS).
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  caddy:
+    image: caddy:2
+    profiles: ["https"]
+    restart: unless-stopped
+    depends_on: [painel]
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_dados:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_dados:
+  caddy_config:

@@ -1,0 +1,42 @@
+name: Testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Instalar o projeto
+        run: pip install -e ".[dev,chat,ia]"
+      - name: Rodar os testes
+        run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir a imagem (CPU)
+        run: docker build -t kjcortes:ci .
+      - name: Subir o painel e conferir /saude
+        run: |
+          cp config.example.yaml config.yaml
+          docker run -d --name kj -p 8000:8000 -e KJCORTES_SENHA=teste kjcortes:ci
+          for i in $(seq 1 30); do curl -fsS http://localhost:8000/saude && break; sleep 2; done
+          curl -fsS http://localhost:8000/saude
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/)" = "401"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -u x:teste http://localhost:8000/)" = "200"
+          docker exec kj ffmpeg -version | head -1
+          docker exec kj kjcortes --version
+      - name: Logs do painel
+        if: always()
+        run: docker logs kj || true
