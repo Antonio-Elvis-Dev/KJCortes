@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import json
 import logging
+import wave
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+
+import numpy as np
 
 log = logging.getLogger(__name__)
 
@@ -50,8 +53,10 @@ def transcrever(audio: Path, pasta: Path, modelo: str, dispositivo: str, idioma:
     disp, tipo = _escolher_dispositivo(dispositivo)
     log.info("Transcrevendo com %s em %s (%s). Pode demorar em vídeos longos.", modelo, disp, tipo)
     whisper = WhisperModel(modelo, device=disp, compute_type=tipo)
+    # Passa as amostras já decodificadas: assim o faster-whisper não usa o PyAV, cujas
+    # versões novas quebram o decode_audio dele ("unexpected keyword argument 'metadata_errors'").
     trechos, info = whisper.transcribe(
-        str(audio),
+        ler_wav(audio),
         language=idioma or None,
         word_timestamps=True,
         vad_filter=True,
@@ -65,6 +70,15 @@ def transcrever(audio: Path, pasta: Path, modelo: str, dispositivo: str, idioma:
 
     cache.write_text(json.dumps([asdict(s) for s in segmentos], ensure_ascii=False), encoding="utf-8")
     return segmentos
+
+
+def ler_wav(caminho: Path) -> np.ndarray:
+    """Lê o WAV mono 16 kHz 16 bits gerado por signals.extrair_audio como float32 em [-1, 1]."""
+    with wave.open(str(caminho), "rb") as w:
+        if w.getnchannels() != 1 or w.getframerate() != 16000 or w.getsampwidth() != 2:
+            raise ValueError(f"{caminho} precisa ser WAV mono 16 kHz 16 bits")
+        bruto = w.readframes(w.getnframes())
+    return np.frombuffer(bruto, dtype=np.int16).astype(np.float32) / 32768.0
 
 
 def carregar(caminho: Path) -> list[Segmento]:

@@ -79,3 +79,17 @@ def test_interpretar_resposta_ia():
     texto = 'Aqui:\n```json\n[{"id": 0, "nota": 8, "titulo": "Grito épico"}]\n```'
     assert llm.interpretar(texto)[0]["nota"] == 8
     assert llm.interpretar("sem json") == []
+
+
+def test_ler_wav_para_whisper(tmp_path):
+    import subprocess
+    import wave
+
+    from kjcortes import signals, transcribe
+
+    video = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=d=2", str(video)], check=True)
+    wav = signals.extrair_audio(video, tmp_path / "a.wav")
+    amostras = transcribe.ler_wav(wav)
+    assert amostras.dtype == np.float32 and abs(len(amostras) - 32000) < 2000
+    assert 0 < np.abs(amostras).max() <= 1
